@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dota 2 Hero Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#c89b3c;--gold-l:#e8b84b;--gold-d:#8b6420;
+  --bg:#080b10;--bg-card:#0e1320;--bg-panel:#131a28;
+  --border:#1e2a3a;--border-b:#2e4060;
+  --txt:#e8dcc8;--muted:#7a8fa8;
+  --green:#22c55e;--red:#ef4444;--orange:#f97316;
+}
+body{background:var(--bg);color:var(--txt);font-family:'Barlow Condensed',sans-serif;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1rem}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(200,155,60,.08) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 20% 100%,rgba(129,140,248,.05) 0%,transparent 50%);pointer-events:none;z-index:0}
+#app{width:100%;max-width:700px;position:relative;z-index:1}
+#header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
+.logo{font-family:'Cinzel',serif;font-size:21px;font-weight:900;color:var(--gold);letter-spacing:3px;text-shadow:0 0 30px rgba(200,155,60,.4)}
+.logo span{color:var(--muted);font-size:12px;font-family:'Barlow Condensed',sans-serif;letter-spacing:2px;margin-left:8px}
+.hud{display:flex;gap:18px}
+.hud-item{text-align:center}
+.hud-label{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+.hud-val{font-size:22px;font-weight:700;color:var(--gold);line-height:1.1}
+#mode-selector{display:flex;align-items:center;gap:10px;margin-bottom:.7rem}
+#mode-open-btn{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:7px 16px;border-radius:8px;cursor:pointer;background:var(--bg-panel);border:1px solid var(--border-b);color:var(--txt);display:flex;align-items:center;gap:8px;transition:all .15s;white-space:nowrap;min-width:200px;justify-content:space-between}
+#mode-open-btn:hover{border-color:var(--gold);color:var(--gold)}
+#mode-open-arrow{font-size:11px;color:var(--muted)}
+#filter-bar{display:flex;gap:6px;align-items:center;flex:1}
+/* Modal */
+#mode-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:1rem}
+#mode-modal.open{display:flex}
+#mode-modal-inner{background:var(--bg-card);border:1px solid var(--border-b);border-radius:16px;padding:1.2rem;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
+.modal-section-label{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:4px 0 2px;margin-top:4px}
+.modal-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;text-align:left;transition:all .15s;width:100%}
+.modal-card:hover{border-color:var(--border-b);background:#192033}
+.modal-card.active{border-color:var(--gold);background:rgba(200,155,60,.07)}
+.modal-card.gtab-card.active{border-color:#e11d48;background:rgba(225,29,72,.07)}
+.modal-card.hc-card{border-color:rgba(220,38,38,.3)}
+.modal-card.hc-card.active{border-color:#dc2626;background:rgba(220,38,38,.07)}
+.mc-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--txt);letter-spacing:.5px}
+.mc-desc{font-size:12px;color:var(--muted);margin-top:2px;letter-spacing:.5px}
+.lud-card{border-color:rgba(168,85,247,.3)}
+.lud-card.active,.lud-card:hover{border-color:#a855f7;background:rgba(168,85,247,.07)}
+#modal-close-btn{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:8px;border-radius:8px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:4px;transition:all .15s}
+#modal-close-btn:hover{border-color:var(--red);color:var(--red)}
+.mode-tab{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:6px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--muted);transition:all .15s}
+.mode-tab:hover{border-color:var(--border-b);color:var(--txt)}
+.mode-tab.active{background:var(--bg-panel);border-color:var(--gold);color:var(--gold)}
+.mode-tab.gtab.active{border-color:#e11d48;color:#fb7185;background:rgba(225,29,72,.08)}
+#status-bar{min-height:26px;margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between}
+#streak-txt{font-size:13px;font-weight:700;letter-spacing:2px;color:var(--orange);text-transform:uppercase}
+#lives-row{display:flex;gap:5px;align-items:center}
+.life-heart{font-size:18px;transition:opacity .3s,filter .3s}
+.life-heart.lost{opacity:.2;filter:grayscale(1)}
+#game-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,.6)}
+#game-card.gcard{border-color:rgba(225,29,72,.35);box-shadow:0 0 60px rgba(0,0,0,.6),0 0 0 1px rgba(225,29,72,.1)}
+#progress{height:4px;background:#0a0e16}
+#progress-fill{height:100%;background:linear-gradient(90deg,var(--gold-d),var(--gold-l));transition:width .5s ease;width:0%}
+#progress-fill.gfill{background:linear-gradient(90deg,#9f1239,#e11d48)}
+#hero-display{position:relative;height:300px;background:#060911;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#hero-img{width:100%;height:100%;object-fit:cover;object-position:top center;transition:opacity .4s;display:block}
+#hero-img.revealing{transition:opacity .4s,filter .45s ease}
+#hero-img.loading{opacity:0}
+#hero-img.blurred{filter:blur(14px) brightness(0.85);transform:scale(1.08)}
+#hero-img.grey{filter:grayscale(1)}
+#hero-img.blurred.grey{filter:blur(14px) brightness(0.85) grayscale(1);transform:scale(1.08)}
+#hero-display::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(14,19,32,.95) 100%),linear-gradient(to right,rgba(14,19,32,.3) 0%,transparent 20%,transparent 80%,rgba(14,19,32,.3) 100%);pointer-events:none}
+#result-flash{position:absolute;inset:0;z-index:5;opacity:0;pointer-events:none;transition:opacity .15s ease;display:flex;align-items:center;justify-content:center}
+#result-flash.show{opacity:1}
+#result-flash.correct-flash{background:rgba(34,197,94,.25)}
+#result-flash.wrong-flash{background:rgba(239,68,68,.25)}
+#flash-icon{font-size:80px;line-height:1;filter:drop-shadow(0 0 24px rgba(0,0,0,.7));transform:scale(.5);transition:transform .22s cubic-bezier(.34,1.56,.64,1)}
+#result-flash.show #flash-icon{transform:scale(1)}
+#hero-name-reveal{position:absolute;bottom:56px;left:0;right:0;text-align:center;z-index:6;pointer-events:none;opacity:0;transition:opacity .2s .15s}
+#hero-name-reveal.show{opacity:1}
+#hero-name-reveal span{font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:#fff;letter-spacing:2px;text-shadow:0 2px 12px rgba(0,0,0,.9);background:rgba(8,11,16,.75);padding:6px 18px;border-radius:6px;border:1px solid rgba(239,68,68,.5)}
+#hint-overlay{position:absolute;bottom:0;left:0;right:0;padding:10px 14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;z-index:2}
+.badge{font-size:11px;font-weight:700;letter-spacing:1.5px;padding:3px 9px;border-radius:4px;text-transform:uppercase}
+.b-str{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+.b-agi{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3)}
+.b-int{background:rgba(129,140,248,.15);color:#818cf8;border:1px solid rgba(129,140,248,.3)}
+.b-uni{background:rgba(200,155,60,.15);color:var(--gold);border:1px solid rgba(200,155,60,.3)}
+.b-role{background:rgba(30,42,58,.9);color:var(--muted);border:1px solid var(--border)}
+#gover{display:none;position:absolute;inset:0;background:rgba(8,11,16,.93);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
+#gover h3{font-family:'Cinzel',serif;font-size:30px;color:#fb7185;margin-bottom:.4rem;text-shadow:0 0 30px rgba(225,29,72,.5)}
+#gover .gsub{font-size:14px;color:var(--muted);margin-bottom:1.2rem;letter-spacing:1px}
+#gover .gnum{font-size:56px;font-weight:700;color:var(--txt);line-height:1;margin-bottom:.2rem}
+#gover .glbl{font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+#question-zone{padding:1.1rem 1.3rem 1.3rem}
+#prompt{font-size:13px;color:var(--muted);margin-bottom:10px;letter-spacing:1px;text-transform:uppercase}
+#options{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.opt-btn{background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:600;color:var(--txt);cursor:pointer;text-align:left;letter-spacing:.5px;transition:background .12s,border-color .12s,color .12s,transform .1s;position:relative;overflow:hidden}
+.opt-btn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);opacity:0;transition:opacity .12s}
+.opt-btn:hover:not(:disabled){background:#192033;border-color:var(--border-b);color:#f0e6d2;transform:translateY(-1px)}
+.opt-btn:hover:not(:disabled)::before{opacity:1}
+.opt-btn.correct{background:rgba(34,197,94,.12);border-color:var(--green);color:#4ade80}
+.opt-btn.correct::before{background:var(--green);opacity:1}
+.opt-btn.wrong{background:rgba(239,68,68,.1);border-color:var(--red);color:#f87171}
+.opt-btn.wrong::before{background:var(--red);opacity:1}
+.opt-btn.reveal{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.4);color:#86efac}
+.opt-btn.reveal::before{background:var(--green);opacity:.5}
+.opt-btn:disabled{cursor:default;transform:none}
+#controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.cbtn{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:8px 15px;border-radius:7px;cursor:pointer;transition:all .12s}
+.cbtn:hover{transform:translateY(-1px)}
+.cbtn:active{transform:scale(.97)}
+#hint-btn{background:transparent;border:1px solid var(--border-b);color:var(--muted)}
+#hint-btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+#hint-btn:disabled{opacity:.3;cursor:default;transform:none}
+#filter-bar{display:flex;gap:6px;align-items:center;margin-bottom:.7rem}
+.filter-label{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;margin-right:2px}
+#blur-btn{background:transparent;border:1px solid var(--border);color:var(--muted)}
+#blur-btn.active{border-color:#818cf8;color:#818cf8}
+#blur-btn:hover{border-color:#818cf8;color:#818cf8}
+#grey-btn{background:transparent;border:1px solid var(--border);color:var(--muted)}
+#grey-btn.active{border-color:#818cf8;color:#818cf8}
+#grey-btn:hover{border-color:#818cf8;color:#818cf8}
+#end-screen{display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:2.5rem 1.5rem;text-align:center;box-shadow:0 0 60px rgba(0,0,0,.6)}
+#end-screen h2{font-family:'Cinzel',serif;font-size:11px;letter-spacing:5px;color:var(--muted);margin-bottom:4px}
+#end-subtitle{font-size:15px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:.5rem}
+#end-title{font-family:'Cinzel',serif;font-size:28px;color:var(--gold);margin-bottom:1rem;text-shadow:0 0 30px rgba(200,155,60,.4)}
+.sc-circle{width:130px;height:130px;border-radius:50%;border:2px solid var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 1rem;background:rgba(200,155,60,.05);box-shadow:0 0 30px rgba(200,155,60,.15)}
+.sc-circle.ge{border-color:#e11d48;box-shadow:0 0 30px rgba(225,29,72,.2)}
+.sc-circle.ge .sc-num{color:#fb7185}
+.sc-num{font-size:44px;font-weight:700;color:var(--gold-l);line-height:1}
+.sc-den{font-size:13px;color:var(--muted);letter-spacing:1px}
+#filter-info{font-size:13px;color:var(--muted);letter-spacing:1px;margin-bottom:1rem}
+#filter-warn-box{font-size:13px;font-weight:700;color:#f97316;letter-spacing:1px;margin-bottom:.8rem;display:none}
+#rank-badge{display:inline-block;font-size:13px;font-weight:700;letter-spacing:3px;padding:7px 22px;border-radius:6px;margin-bottom:1.2rem;text-transform:uppercase}
+#end-stats{display:flex;justify-content:center;gap:2rem;margin-bottom:1.4rem}
+.estat .val{font-size:26px;font-weight:700;color:var(--txt)}
+.estat .lbl{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+#trail{margin:0 0 1rem;max-height:100px;overflow-y:auto;display:none;flex-wrap:wrap;gap:5px;justify-content:center}
+.chip{font-size:11px;font-weight:600;letter-spacing:.5px;padding:3px 9px;border-radius:4px;background:var(--bg-panel);border:1px solid var(--border);color:var(--muted)}
+.chip.ok{border-color:rgba(34,197,94,.4);color:#86efac;background:rgba(34,197,94,.07)}
+.chip.bad{border-color:rgba(239,68,68,.35);color:#fca5a5;background:rgba(239,68,68,.08)}
+#play-again{background:var(--gold);border:none;color:#080b10;padding:11px 34px;font-size:16px;border-radius:8px}
+#play-again:hover{background:var(--gold-l)}
+#gbanner{display:none;background:rgba(225,29,72,.07);border:1px solid rgba(225,29,72,.25);border-radius:8px;padding:10px 14px;margin-bottom:.7rem;font-size:13px;color:#fca5a5;letter-spacing:.5px;line-height:1.5}
+#gbanner b{color:#fb7185}
+.gchoice{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:5px;cursor:pointer;background:transparent;border:1px solid rgba(225,29,72,.35);color:#f9a8b4;transition:all .12s}
+.gchoice.active{background:rgba(225,29,72,.18);border-color:#e11d48;color:#fb7185}
+.gchoice:hover:not(.active){border-color:rgba(225,29,72,.6);color:#fb7185}
+
+@media(max-width:520px){
+  body{padding:1rem .6rem}
+  .logo{font-size:17px;letter-spacing:2px}
+  .logo span{font-size:10px}
+  .hud-val{font-size:18px}
+  .hud-label{font-size:9px}
+  #mode-open-btn{font-size:12px;padding:6px 12px}
+  #filter-bar{flex-wrap:wrap}
+  .mode-tab{font-size:11px;padding:6px 8px;letter-spacing:.8px}
+  #hero-display{height:220px}
+  #flash-icon{font-size:56px}
+  #hero-name-reveal span{font-size:15px;padding:5px 12px}
+  #question-zone{padding:.9rem 1rem 1rem}
+  .opt-btn{font-size:14px;padding:9px 8px}
+  .cbtn{font-size:11px;padding:7px 10px;letter-spacing:1px}
+  #gbanner{font-size:12px}
+  .sc-num{font-size:36px}
+  #end-stats{gap:1.2rem}
+  .estat .val{font-size:20px}
+}
+
+#retry-btn{background:transparent;border:1px solid #f97316;color:#f97316;padding:11px 28px;font-size:15px;border-radius:8px;margin-top:8px;display:none}
+#retry-btn:hover{background:rgba(249,115,22,.12)}
+#retry-banner{display:none;background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.25);border-radius:8px;padding:9px 14px;margin-bottom:.7rem;font-size:13px;color:#fdba74;letter-spacing:.5px;line-height:1.6}
+#retry-banner b{color:#f97316}
+#retry-progress{font-size:12px;color:var(--muted);margin-top:3px;letter-spacing:1px}
+
+/* Practice Range */
+.modal-section-label{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:4px 0 2px;margin-top:4px}
+.test-card{border-color:rgba(100,200,100,.3)}
+.test-card.active,.test-card:hover{border-color:#4ade80;background:rgba(74,222,128,.07)}
+.pr-card{border-color:rgba(99,102,241,.3)}
+.pr-card.active,.pr-card:hover{border-color:#6366f1;background:rgba(99,102,241,.07)}
+#pr-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:110;align-items:center;justify-content:center;padding:1rem}
+#pr-modal.open{display:flex}
+#pr-modal-inner{background:var(--bg-card);border:1px solid var(--border-b);border-radius:16px;padding:1.4rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px}
+#pr-title{font-family:'Cinzel',serif;font-size:18px;color:var(--gold);font-weight:700;letter-spacing:2px}
+#pr-subtitle{font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+#pr-filters{display:flex;gap:8px;flex-wrap:wrap}
+.pr-filter-btn{flex:1;min-width:100px;max-width:calc(50% - 4px);background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;text-align:left;transition:all .15s}
+.pr-filter-btn:hover{border-color:var(--border-b)}
+.pr-filter-btn.active{border-color:#6366f1;background:rgba(99,102,241,.08)}
+.prf-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--txt);letter-spacing:.5px}
+.prf-count{font-size:11px;color:var(--muted);margin-top:2px}
+#pr-choices-row{display:flex;gap:8px;align-items:center}
+#pr-start-btn{background:var(--gold);border:none;color:#080b10;padding:10px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:8px;cursor:pointer;transition:all .15s}
+#pr-start-btn:hover{background:var(--gold-l)}
+#pr-close-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border-radius:8px;cursor:pointer;transition:all .15s}
+#pr-close-btn:hover{border-color:var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div class="logo">DOTA 2 <span>HERO QUIZ</span></div>
+    <div class="hud">
+      <div class="hud-item"><div class="hud-label">Score</div><div class="hud-val" id="score-val">0</div></div>
+      <div class="hud-item"><div class="hud-label">Round</div><div class="hud-val" id="round-val">1/15</div></div>
+    </div>
+  </div>
+
+
+  <div id="mode-selector">
+    <button id="mode-open-btn" onclick="openModeModal()">
+      <span id="mode-open-label">⚔ Normal</span>
+      <span id="mode-open-arrow">▾</span>
+    </button>
+    <div id="filter-bar">
+      <span class="filter-label" id="filter-label">Filters:</span>
+      <button class="cbtn" id="blur-btn" onclick="toggleBlur()">〰 Blur: OFF</button>
+      <button class="cbtn" id="grey-btn" onclick="toggleGrey()">◑ Grey: OFF</button>
+    </div>
+  </div>
+
+  <!-- Mode Modal -->
+  <div id="mode-modal" onclick="closeModeModal(event)">
+    <div id="mode-modal-inner">
+      <button class="modal-card test-card" id="tab-test" onclick="setMode('test')">
+        <div class="mc-title">🧪 Test</div>
+        <div class="mc-desc">3 random questions — for testing</div>
+      </button>
+      <div id="modal-section-label">NORMAL MODES</div>
+      <button class="modal-card active" id="tab-normal" onclick="setMode('normal')">
+        <div class="mc-title">Normal</div>
+        <div class="mc-desc">15 heroes · 4 choices</div>
+      </button>
+      <button class="modal-card" id="tab-hard" onclick="setMode('hard')">
+        <div class="mc-title">Hard</div>
+        <div class="mc-desc">15 heroes · 8 choices</div>
+      </button>
+      <button class="modal-card" id="tab-btches" onclick="setMode('btches')">
+        <div class="mc-title">👸 B*tches</div>
+        <div class="mc-desc">Female heroes only · 2 choices</div>
+      </button>
+      <div id="modal-section-label-2" class="modal-section-label">GAUNTLET MODES</div>
+      <button class="modal-card gtab-card" id="tab-gauntlet" onclick="setMode('gauntlet')">
+        <div class="mc-title">⚔ Gauntlet</div>
+        <div class="mc-desc">All heroes · 3 lives · 4 choices</div>
+      </button>
+      <button class="modal-card gtab-card" id="tab-gauntlet-hard" onclick="setMode('gauntlet-hard')">
+        <div class="mc-title">💀 Gauntlet Hard</div>
+        <div class="mc-desc">All heroes · 3 lives · 8 choices · Greyscale</div>
+      </button>
+      <button class="modal-card hc-card" id="tab-hardcore" onclick="setMode('hardcore')">
+        <div class="mc-title">☠ Hardcore</div>
+        <div class="mc-desc">All heroes · 1 life · 8 choices · Greyscale</div>
+      </button>
+      <button class="modal-card lud-card" id="tab-ludacris" onclick="setMode('ludacris')">
+        <div class="mc-title">🤪 Ludacris Mode</div>
+        <div class="mc-desc">All heroes · 1 life · 8 choices · Greyscale + Blur</div>
+      </button>
+      <div class="modal-section-label">PRACTICE</div>
+      <button class="modal-card pr-card" id="tab-practice" onclick="openPracticeRange()">
+        <div class="mc-title">🎯 Practice Range</div>
+        <div class="mc-desc">Choose a hero filter and drill specific groups</div>
+      </button>
+      <button id="modal-close-btn" onclick="closeModeModal()">✕ Close</button>
+    </div>
+  </div>
+
+
+  <!-- Practice Range Overlay -->
+  <div id="pr-modal" onclick="closePrModal(event)">
+    <div id="pr-modal-inner">
+      <div id="pr-title">🎯 PRACTICE RANGE</div>
+      <div id="pr-subtitle">Choose a filter to drill</div>
+      <div id="pr-filters">
+        <button class="pr-filter-btn active" id="prf-cunts" onclick="selectPrFilter('cunts',this)">
+          <div class="prf-name">C*nts</div>
+          <div class="prf-count">13 heroes</div>
+        </button>
+        <button class="pr-filter-btn" id="prf-demons" onclick="selectPrFilter('demons',this)">
+          <div class="prf-name">Demons</div>
+          <div class="prf-count">14 heroes</div>
+        </button>
+        <button class="pr-filter-btn" id="prf-geezers" onclick="selectPrFilter('geezer',this)">
+          <div class="prf-name">Geezers</div>
+          <div class="prf-count">24 heroes</div>
+        </button>
+      </div>
+      <div id="pr-choices-row">
+        <span class="filter-label">Choices:</span>
+        <button class="gchoice active" id="prc2" onclick="selectPrChoices(2,this)">2</button>
+        <button class="gchoice" id="prc4" onclick="selectPrChoices(4,this)">4</button>
+        <button class="gchoice" id="prc8" onclick="selectPrChoices(8,this)">8</button>
+      </div>
+      <button id="pr-start-btn" onclick="startPractice()">▶ START</button>
+      <button id="pr-close-btn" onclick="closePrModal()">✕ Cancel</button>
+    </div>
+  </div>
+  <div id="retry-banner"><b>RETRY MODE:</b> Only the heroes you got wrong — get each one right to clear it. <div id="retry-progress"></div></div>
+  <div id="gbanner"><span id="gbanner-text"></span> Survive all <span id="gbanner-total">0</span> heroes to become an Undying Legend.
+    <div id="gauntlet-choices" style="margin-top:8px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#f9a8b4">Choices:</span>
+      <button class="gchoice active" id="gc4" onclick="setGauntletChoices(4)">4</button>
+      <button class="gchoice" id="gc8" onclick="setGauntletChoices(8)">8</button>
+    </div>
+  </div>
+
+  <div id="status-bar">
+    <div id="streak-txt"></div>
+    <div id="lives-row"></div>
+  </div>
+
+  <div id="game-card">
+    <div id="progress"><div id="progress-fill"></div></div>
+    <div id="hero-display">
+      <img id="hero-img" src="" alt="Guess this Dota 2 hero">
+      <div id="result-flash"><div id="flash-icon"></div></div>
+      <div id="hero-name-reveal"><span id="reveal-name"></span></div>
+      <div id="hint-overlay"></div>
+      <div id="gover">
+        <h3>WIPED OUT</h3>
+        <div class="gsub">You ran out of lives</div>
+        <div class="gnum" id="go-count">0</div>
+        <div class="glbl">Heroes survived</div>
+      </div>
+    </div>
+    <div id="question-zone">
+      <div id="prompt">Which Dota 2 hero is this?</div>
+      <div id="options"></div>
+      <div id="controls">
+        <button class="cbtn" id="hint-btn" onclick="useHint()">💡 Hint (−1 pt)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="end-screen">
+    <h2>MATCH OVER</h2>
+    <div id="end-title">GAME COMPLETE</div>
+    <div id="end-subtitle"></div>
+    <div id="filter-info"></div>
+    <div class="sc-circle" id="sc-circle">
+      <div class="sc-num" id="final-score">0</div>
+      <div class="sc-den" id="final-denom">/ 30 pts</div>
+    </div>
+    <div id="rank-badge"></div>
+    <div id="filter-warn-box"></div>
+    <div id="trail"></div>
+    <div id="end-stats">
+      <div class="estat"><div class="val" id="s-correct">0</div><div class="lbl">Correct</div></div>
+      <div class="estat"><div class="val" id="s-acc">0%</div><div class="lbl">Accuracy</div></div>
+      <div class="estat"><div class="val" id="s-streak">0</div><div class="lbl">Best streak</div></div>
+    </div>
+    <button class="cbtn" id="play-again" onclick="gMode==='practice'?startPractice():startGame()">▶ PLAY AGAIN</button>
+    <button class="cbtn" id="retry-btn" onclick="startRetry()">🔁 RETRY MISSED HEROES</button>
+  </div>
+</div>
+
+<script>
+const HEROES=[
+  {n:"Abaddon",g:["demons"],           a:"str",r:["Support","Carry"],          k:"abaddon"},
+  {n:"Alchemist",         a:"str",r:["Carry","Jungler"],          k:"alchemist",g:["geezer"]},
+  {n:"Axe",               a:"str",r:["Initiator","Disabler"],     k:"axe",g:["geezer"]},
+  {n:"Beastmaster",       a:"str",r:["Initiator","Jungler"],      k:"beastmaster"},
+  {n:"Brewmaster",        a:"str",r:["Initiator","Durable"],      k:"brewmaster"},
+  {n:"Bristleback",       a:"str",r:["Durable","Initiator"],      k:"bristleback"},
+  {n:"Centaur Warrunner", a:"str",r:["Initiator","Durable"],      k:"centaur"},
+  {n:"Chaos Knight",g:["demons"],      a:"str",r:["Carry","Durable"],          k:"chaos_knight"},
+  {n:"Clockwerk",         a:"str",r:["Initiator","Disabler"],     k:"rattletrap"},
+  {n:"Dawnbreaker",g:["cunts"],f:true,g:["cunts"],       a:"str",r:["Support","Carry"],          k:"dawnbreaker"},
+  {n:"Dragon Knight",     a:"str",r:["Carry","Durable"],          k:"dragon_knight"},
+  {n:"Earth Spirit",      a:"str",r:["Initiator","Disabler"],     k:"earth_spirit"},
+  {n:"Earthshaker",       a:"str",r:["Initiator","Disabler"],     k:"earthshaker"},
+  {n:"Elder Titan",       a:"str",r:["Initiator","Disabler"],     k:"elder_titan"},
+  {n:"Huskar",            a:"str",r:["Carry","Durable"],          k:"huskar"},
+  {n:"Kunkka",            a:"str",r:["Carry","Initiator"],        k:"kunkka",g:["geezer"]},
+  {n:"Largo",             a:"str",r:["Support","Disabler"],       k:"largo"},
+  {n:"Legion Commander",g:["cunts"],f:true,g:["cunts"],  a:"str",r:["Carry","Pusher"],           k:"legion_commander"},
+  {n:"Lifestealer",       a:"str",r:["Carry","Jungler"],          k:"life_stealer"},
+  {n:"Lycan",             a:"str",r:["Carry","Jungler"],          k:"lycan",g:["geezer"]},
+  {n:"Mars",              a:"str",r:["Initiator","Disabler"],     k:"mars"},
+  {n:"Night Stalker",g:["demons"],     a:"str",r:["Carry","Initiator"],        k:"night_stalker"},
+  {n:"Ogre Magi",         a:"str",r:["Support","Disabler"],       k:"ogre_magi"},
+  {n:"Omniknight",        a:"str",r:["Support","Durable"],        k:"omniknight",g:["geezer"]},
+  {n:"Phoenix",           a:"str",r:["Initiator","Support"],      k:"phoenix"},
+  {n:"Primal Beast",      a:"str",r:["Initiator","Durable"],      k:"primal_beast"},
+  {n:"Pudge",             a:"str",r:["Support","Disabler"],       k:"pudge"},
+  {n:"Ringmaster",        a:"str",r:["Support","Disabler"],       k:"ringmaster"},
+  {n:"Sand King",         a:"str",r:["Initiator","Disabler"],     k:"sand_king"},
+  {n:"Slardar",           a:"str",r:["Initiator","Carry"],        k:"slardar"},
+  {n:"Snapfire",f:true,          a:"str",r:["Support","Nuker"],          k:"snapfire"},
+  {n:"Spirit Breaker",    a:"str",r:["Initiator","Carry"],        k:"spirit_breaker"},
+  {n:"Sven",              a:"str",r:["Carry","Initiator"],        k:"sven"},
+  {n:"Tidehunter",        a:"str",r:["Initiator","Durable"],      k:"tidehunter"},
+  {n:"Timbersaw",         a:"str",r:["Carry","Durable"],          k:"shredder",g:["geezer"]},
+  {n:"Tiny",              a:"str",r:["Carry","Initiator"],        k:"tiny"},
+  {n:"Treant Protector",  a:"str",r:["Support","Disabler"],       k:"treant"},
+  {n:"Tusk",              a:"str",r:["Initiator","Disabler"],     k:"tusk"},
+  {n:"Underlord",g:["demons"],         a:"str",r:["Pusher","Durable"],         k:"abyssal_underlord"},
+  {n:"Undying",           a:"str",r:["Support","Durable"],        k:"undying"},
+  {n:"Wraith King",       a:"str",r:["Carry","Durable"],          k:"skeleton_king"},
+  {n:"Anti-Mage",         a:"agi",r:["Carry","Escape"],           k:"antimage",g:["geezer"]},
+  {n:"Arc Warden",        a:"agi",r:["Carry","Pusher"],           k:"arc_warden"},
+  {n:"Bloodseeker",       a:"agi",r:["Carry","Jungler"],          k:"bloodseeker"},
+  {n:"Bounty Hunter",     a:"agi",r:["Carry","Escape"],           k:"bounty_hunter"},
+  {n:"Broodmother",f:true,       a:"agi",r:["Carry","Pusher"],           k:"broodmother"},
+  {n:"Clinkz",g:["demons"],            a:"agi",r:["Carry","Escape"],           k:"clinkz"},
+  {n:"Drow Ranger",g:["cunts"],f:true,g:["cunts"],       a:"agi",r:["Carry","Disabler"],         k:"drow_ranger"},
+  {n:"Ember Spirit",      a:"agi",r:["Carry","Escape"],           k:"ember_spirit"},
+  {n:"Faceless Void",     a:"agi",r:["Carry","Initiator"],        k:"faceless_void"},
+  {n:"Gyrocopter",        a:"agi",r:["Carry","Nuker"],            k:"gyrocopter",g:["geezer"]},
+  {n:"Hoodwink",f:true,          a:"agi",r:["Support","Disabler"],       k:"hoodwink"},
+  {n:"Juggernaut",        a:"agi",r:["Carry","Pusher"],           k:"juggernaut"},
+  {n:"Kez",               a:"agi",r:["Carry","Escape"],           k:"kez"},
+  {n:"Lone Druid",        a:"agi",r:["Carry","Pusher","geezer"],           k:"lone_druid"},
+  {n:"Luna",g:["cunts"],f:true,g:["cunts"],              a:"agi",r:["Carry","Pusher"],           k:"luna"},
+  {n:"Medusa",f:true,            a:"agi",r:["Carry","Durable"],          k:"medusa"},
+  {n:"Meepo",             a:"agi",r:["Carry","Escape"],           k:"meepo"},
+  {n:"Mirana",g:["cunts"],f:true,g:["cunts"],            a:"agi",r:["Support","Carry"],          k:"mirana"},
+  {n:"Monkey King",       a:"agi",r:["Carry","Escape"],           k:"monkey_king"},
+  {n:"Morphling",         a:"agi",r:["Carry","Escape"],           k:"morphling"},
+  {n:"Naga Siren",g:["cunts"],f:true,g:["cunts"],        a:"agi",r:["Carry","Support"],          k:"naga_siren"},
+  {n:"Nyx Assassin",g:["demons"],      a:"agi",r:["Initiator","Escape"],       k:"nyx_assassin"},
+  {n:"Phantom Assassin",f:true,  a:"agi",r:["Carry","Escape"],           k:"phantom_assassin"},
+  {n:"Phantom Lancer",    a:"agi",r:["Carry","Escape"],           k:"phantom_lancer",g:["geezer"]},
+  {n:"Razor",             a:"agi",r:["Carry","Durable"],          k:"razor"},
+  {n:"Riki",              a:"agi",r:["Carry","Escape"],           k:"riki"},
+  {n:"Shadow Fiend",g:["demons"],      a:"agi",r:["Carry","Nuker"],            k:"nevermore"},
+  {n:"Slark",             a:"agi",r:["Carry","Escape"],           k:"slark"},
+  {n:"Sniper",            a:"agi",r:["Carry","Nuker","geezer"],            k:"sniper"},
+  {n:"Spectre",g:["demons"],f:true,           a:"agi",r:["Carry","Durable"],          k:"spectre"},
+  {n:"Templar Assassin",g:["cunts"],f:true,g:["cunts"],  a:"agi",r:["Carry","Escape"],           k:"templar_assassin"},
+  {n:"Terrorblade",       a:"agi",r:["Carry","Pusher"],           k:"terrorblade"},
+  {n:"Troll Warlord",     a:"agi",r:["Carry","Pusher"],           k:"troll_warlord",g:["geezer"]},
+  {n:"Ursa",              a:"agi",r:["Carry","Jungler"],          k:"ursa"},
+  {n:"Vengeful Spirit",g:["cunts"],f:true,g:["cunts"],   a:"agi",r:["Support","Initiator"],      k:"vengefulspirit"},
+  {n:"Viper",             a:"agi",r:["Carry","Durable"],          k:"viper"},
+  {n:"Weaver",f:true,            a:"agi",r:["Carry","Escape"],           k:"weaver"},
+  {n:"Ancient Apparition",a:"int",r:["Support","Nuker"],          k:"ancient_apparition"},
+  {n:"Bane",              a:"int",r:["Support","Disabler"],       k:"bane"},
+  {n:"Batrider",          a:"int",r:["Initiator","Disabler"],     k:"batrider",g:["geezer"]},
+  {n:"Chen",              a:"int",r:["Support","Jungler","geezer"],        k:"chen"},
+  {n:"Crystal Maiden",g:["cunts"],f:true,g:["cunts"],    a:"int",r:["Support","Disabler"],       k:"crystal_maiden"},
+  {n:"Dark Seer",         a:"int",r:["Initiator","Pusher"],       k:"dark_seer",g:["geezer"]},
+  {n:"Dazzle",            a:"int",r:["Support","Disabler"],       k:"dazzle"},
+  {n:"Death Prophet",g:["cunts"],f:true,g:["cunts"],     a:"int",r:["Carry","Pusher"],           k:"death_prophet"},
+  {n:"Disruptor",         a:"int",r:["Support","Initiator","geezer"],      k:"disruptor"},
+  {n:"Enchantress",g:["cunts"],f:true,g:["cunts"],       a:"int",r:["Support","Jungler"],        k:"enchantress"},
+  {n:"Enigma",g:["demons"],            a:"int",r:["Initiator","Jungler"],      k:"enigma"},
+  {n:"Grimstroke",        a:"int",r:["Support","Disabler"],       k:"grimstroke"},
+  {n:"Invoker",           a:"int",r:["Carry","Nuker"],            k:"invoker",g:["geezer"]},
+  {n:"Jakiro",            a:"int",r:["Support","Nuker"],          k:"jakiro"},
+  {n:"Keeper of the Light",a:"int",r:["Support","Pusher"],        k:"keeper_of_the_light",g:["geezer"]},
+  {n:"Leshrac",           a:"int",r:["Carry","Pusher"],           k:"leshrac"},
+  {n:"Lich",              a:"int",r:["Support","Nuker"],          k:"lich"},
+  {n:"Lina",g:["cunts"],f:true,g:["cunts"],              a:"int",r:["Carry","Nuker"],            k:"lina"},
+  {n:"Lion",              a:"int",r:["Support","Disabler"],       k:"lion"},
+  {n:"Muerta",f:true,            a:"int",r:["Carry","Support"],          k:"muerta"},
+  {n:"Nature's Prophet",  a:"int",r:["Pusher","Carry"],           k:"furion"},
+  {n:"Necrophos",         a:"int",r:["Carry","Nuker"],            k:"necrolyte"},
+  {n:"Oracle",            a:"int",r:["Support","Disabler"],       k:"oracle"},
+  {n:"Outworld Destroyer",g:["demons"],a:"int",r:["Carry","Nuker"],            k:"obsidian_destroyer"},
+  {n:"Puck",f:true,              a:"int",r:["Initiator","Escape"],       k:"puck"},
+  {n:"Pugna",             a:"int",r:["Pusher","Nuker"],           k:"pugna"},
+  {n:"Queen of Pain",g:["cunts"],f:true,g:["cunts"],     a:"int",r:["Carry","Nuker"],            k:"queenofpain"},
+  {n:"Rubick",g:["demons"],            a:"int",r:["Support","Disabler"],       k:"rubick"},
+  {n:"Shadow Demon",g:["demons"],      a:"int",r:["Support","Disabler"],       k:"shadow_demon"},
+  {n:"Shadow Shaman",     a:"int",r:["Support","Disabler"],       k:"shadow_shaman"},
+  {n:"Silencer",          a:"int",r:["Carry","Support"],          k:"silencer",g:["geezer"]},
+  {n:"Skywrath Mage",     a:"int",r:["Support","Nuker"],          k:"skywrath_mage",g:["geezer"]},
+  {n:"Storm Spirit",      a:"int",r:["Carry","Escape"],           k:"storm_spirit"},
+  {n:"Tinker",            a:"int",r:["Pusher","Nuker"],           k:"tinker"},
+  {n:"Visage",g:["demons"],            a:"int",r:["Support","Carry"],          k:"visage"},
+  {n:"Warlock",           a:"int",r:["Support","Initiator"],      k:"warlock",g:["geezer"]},
+  {n:"Winter Wyvern",f:true,     a:"int",r:["Support","Disabler"],       k:"winter_wyvern"},
+  {n:"Witch Doctor",      a:"int",r:["Support","Disabler"],       k:"witch_doctor"},
+  {n:"Zeus",              a:"int",r:["Nuker","Carry"],            k:"zuus",g:["geezer"]},
+  {n:"Dark Willow",f:true,       a:"uni",r:["Support","Disabler"],       k:"dark_willow"},
+  {n:"Doom",g:["demons"],              a:"uni",r:["Carry","Jungler"],          k:"doom_bringer"},
+  {n:"Io",                a:"uni",r:["Support","Escape"],         k:"wisp"},
+  {n:"Magnus",            a:"uni",r:["Initiator","Carry"],        k:"magnataur"},
+  {n:"Marci",f:true,             a:"uni",r:["Support","Carry"],          k:"marci"},
+  {n:"Pangolier",         a:"uni",r:["Initiator","Disabler"],     k:"pangolier"},
+  {n:"Techies",           a:"uni",r:["Support","Pusher"],         k:"techies",g:["geezer"]},
+  {n:"Venomancer",        a:"uni",r:["Pusher","Nuker"],           k:"venomancer"},
+  {n:"Void Spirit",       a:"uni",r:["Carry","Escape"],           k:"void_spirit",g:["geezer"]},
+  {n:"Windranger",f:true,        a:"uni",r:["Carry","Support"],          k:"windrunner"},
+];
+
+const MODE_NAMES={test:'🧪 Test',normal:'Normal',hard:'Hard',btches:'👸 B*tches',
+  gauntlet:'⚔ Gauntlet','gauntlet-hard':'💀 Gauntlet Hard',hardcore:'☠ Hardcore',
+  ludacris:'🤪 Ludacris','practice':'🎯 Practice Range'};
+function imgUrl(k){return`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${k}.png`}
+function imgFb(k){return`https://cdn.dota2.com/apps/dota2/images/heroes/${k}_full.png`}
+
+let gMode='normal',nChoices=4,blurMode=false,greyMode=false,retryMode=false;
+let startBlur=false,startGrey=false,filterChanged=false,wasRetry=false;
+let missedHeroes=new Set(); // wrong answers from normal games
+let pendingRetry=new Set(); // wrong answers during current retry pass
+let score=0,round=0,correct=0,totalAttempts=0,streak=0,best=0,lives=3,dead=false;
+let answered=false,hintUsed=false;
+let queue=[],cur=null,trail=[],answerPool=[];
+let prFilter='cunts',prChoices=2;
+
+document.getElementById('gbanner-total').textContent=HEROES.length;
+
+function openPracticeRange(){
+  closeModeModal();
+  document.getElementById('pr-modal').classList.add('open');
+}
+function closePrModal(e){
+  if(!e||e.target===document.getElementById('pr-modal'))
+    document.getElementById('pr-modal').classList.remove('open');
+}
+function selectPrFilter(f, btn){
+  prFilter=f;
+  document.querySelectorAll('.pr-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function selectPrChoices(n, btn){
+  prChoices=n;
+  document.querySelectorAll('#pr-choices-row .gchoice').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function startPractice(){
+  document.getElementById('pr-modal').classList.remove('open');
+  gMode='practice';
+  nChoices=prChoices;
+  document.getElementById('mode-open-label').textContent='🎯 Practice: '+prFilter.charAt(0).toUpperCase()+prFilter.slice(1);
+  // Deactivate all mode tabs
+  ['normal','hard','gauntlet','gauntlet-hard','hardcore','btches','ludacris','test','practice'].forEach(x=>{
+    const el=document.getElementById('tab-'+x); if(el) el.classList.remove('active');
+  });
+  const el=document.getElementById('tab-practice'); if(el) el.classList.add('active');
+  document.getElementById('gbanner').style.display='none';
+  document.getElementById('hint-btn').style.display='';
+  document.getElementById('grey-btn').style.display='';
+  document.getElementById('blur-btn').style.display='';
+  document.getElementById('filter-label').style.display='';
+  document.getElementById('gauntlet-choices').style.display='none';
+  if(greyMode) toggleGrey(true);
+  if(blurMode) toggleBlur(true);
+  // Start game
+  resetGame();
+  missedHeroes.clear();
+  lives=3;
+  document.getElementById('game-card').classList.remove('gcard');
+  document.getElementById('progress-fill').classList.remove('gfill');
+  answerPool=HEROES.filter(h=>h.g&&h.g.includes(prFilter));
+  queue=shuf([...answerPool]).slice(0,15);
+  updateHUD();renderLives();loadRound();
+}
+function openModeModal(){
+  document.getElementById('mode-modal').classList.add('open');
+}
+function closeModeModal(e){
+  if(!e||e.target===document.getElementById('mode-modal')||e.currentTarget===document.getElementById('modal-close-btn'))
+    document.getElementById('mode-modal').classList.remove('open');
+}
+
+function setMode(m){
+  const prevMode=gMode;
+  gMode=m;
+  document.getElementById('mode-open-label').textContent=MODE_NAMES[m]||m;
+  document.getElementById('mode-modal').classList.remove('open');
+  ['normal','hard','gauntlet','gauntlet-hard','hardcore','btches','ludacris','test','practice'].forEach(x=>{
+    const el=document.getElementById('tab-'+x);
+    if(el) el.classList.toggle('active',x===m);
+  });
+  nChoices=(m==='hard')?8:(m==='hardcore'||m==='gauntlet-hard'||m==='ludacris')?8:(m==='btches')?2:4;
+  const newModeIsGauntlet=m==='gauntlet'||m==='gauntlet-hard'||m==='hardcore'||m==='ludacris';
+  document.getElementById('gbanner').style.display=newModeIsGauntlet?'block':'none';
+  if(newModeIsGauntlet){
+    const livesText=(m==='hardcore'||m==='ludacris')?'<b>1 life</b> — one mistake and it\'s over':'<b>3 lives</b>. One wrong answer costs a life';
+    const modeTitle=m==='hardcore'?'<b>☠ HARDCORE:</b>':m==='ludacris'?'<b>🤪 LUDACRIS:</b>':m==='gauntlet-hard'?'<b>💀 GAUNTLET HARD:</b>':'<b>⚔ GAUNTLET:</b>';
+    document.getElementById('gbanner-text').innerHTML=`${modeTitle} Every hero shuffled — guess them all in a row. You have ${livesText}.`;
+  }
+  document.getElementById('hint-btn').style.display=newModeIsGauntlet?'none':'';
+  document.getElementById('grey-btn').style.display=(m==='gauntlet-hard'||m==='hardcore'||m==='ludacris')?'none':'';
+  document.getElementById('blur-btn').style.display=m==='ludacris'?'none':'';
+  const anyFilter=m!=='ludacris';
+  document.getElementById('filter-label').style.display=anyFilter?'':'none';
+  document.getElementById('gauntlet-choices').style.display=(m==='gauntlet-hard'||m==='hardcore'||m==='ludacris')?'none':'flex';
+  if(newModeIsGauntlet) setGauntletChoices((m==='gauntlet-hard'||m==='hardcore'||m==='ludacris')?8:4,false);
+  // Auto grey for gauntlet-hard and hardcore; off for everything else
+  if((m==='gauntlet-hard'||m==='hardcore'||m==='ludacris') && !greyMode) toggleGrey(true);
+  if(m==='ludacris' && !blurMode) toggleBlur(true);
+  // Only reset filters when leaving a mode that forces them
+  const wasLockedGrey=prevMode==='gauntlet-hard'||prevMode==='hardcore'||prevMode==='ludacris';
+  const wasLockedBlur=prevMode==='ludacris';
+  if(wasLockedGrey && m!=='gauntlet-hard'&&m!=='hardcore'&&m!=='ludacris' && greyMode) toggleGrey(true);
+  if(wasLockedBlur && m!=='ludacris' && blurMode) toggleBlur(true);
+  startGame();
+}
+
+function setGauntletChoices(n,restart=true){
+  nChoices=n;
+  [4,8].forEach(x=>document.getElementById('gc'+x).classList.toggle('active',x===n));
+  if(restart) startGame();
+}
+
+function toggleBlur(silent=false){
+  blurMode=!blurMode;
+  const btn=document.getElementById('blur-btn');
+  btn.textContent='〰 Blur: '+(blurMode?'ON':'OFF');
+  btn.classList.toggle('active',blurMode);
+  if(!answered) document.getElementById('hero-img').classList.toggle('blurred',blurMode);
+}
+
+function toggleGrey(silent=false){
+  greyMode=!greyMode;
+  const btn=document.getElementById('grey-btn');
+  btn.textContent='◑ Grey: '+(greyMode?'ON':'OFF');
+  btn.classList.toggle('active',greyMode);
+  if(!answered) document.getElementById('hero-img').classList.toggle('grey',greyMode);
+}
+
+function shuf(a){return[...a].sort(()=>Math.random()-.5)}
+function isGM(){return gMode==='gauntlet'||gMode==='gauntlet-hard'||gMode==='hardcore'||gMode==='ludacris';}
+
+
+function startRetry(){
+  if(missedHeroes.size===0)return;
+  resetGame();
+  lives=3;
+  retryMode=true;
+  pendingRetry=new Set();
+  document.getElementById('game-card').classList.remove('gcard');
+  document.getElementById('progress-fill').classList.remove('gfill');
+  document.getElementById('gbanner').style.display='none';
+  document.getElementById('retry-banner').style.display='block';
+  answerPool=HEROES;
+  queue=shuf(HEROES.filter(h=>missedHeroes.has(h.n)));
+  updateRetryProgress();
+  updateHUD();renderLives();loadRound();
+}
+
+function updateRetryProgress(){
+  const passTotal=queue.length;
+  const done=round;
+  document.getElementById('retry-progress').textContent=
+    `Pass: ${done}/${passTotal} done · ${pendingRetry.size} failed so far`;
+}
+
+function resetGame(){
+  retryMode=false;
+  score=0;round=0;correct=0;totalAttempts=0;streak=0;best=0;dead=false;
+  answered=false;hintUsed=false;trail=[];
+  filterChanged=false;
+  wasRetry=false;
+  document.getElementById('end-screen').style.display='none';
+  document.getElementById('retry-banner').style.display='none';
+  document.getElementById('game-card').style.display='block';
+  document.getElementById('gover').style.display='none';
+}
+function startGame(){
+  resetGame();
+  missedHeroes.clear();
+  lives=(gMode==='hardcore'||gMode==='ludacris')?1:3;
+  document.getElementById('game-card').classList.toggle('gcard',isGM());
+  document.getElementById('progress-fill').classList.toggle('gfill',isGM());
+  answerPool=gMode==='btches'?HEROES.filter(h=>h.f):HEROES;
+  queue=shuf(answerPool);
+  if(!isGM()&&gMode!=='practice') queue=queue.slice(0,gMode==='test'?3:15);
+  updateHUD();renderLives();loadRound();
+}
+
+function loadRound(){
+  answered=false;hintUsed=false;
+  if(round>=queue.length){endGame();return;}
+  cur=queue[round];
+  const total=retryMode?queue.length:(gMode==='gauntlet'||gMode==='gauntlet-hard'||gMode==='hardcore')?HEROES.length:queue.length;
+  document.getElementById('progress-fill').style.width=(round/total*100)+'%';
+  updateHUD();
+  loadHeroImage(cur.k);
+  document.getElementById('hint-overlay').innerHTML='';
+  document.getElementById('result-flash').className='';
+  document.getElementById('hero-name-reveal').classList.remove('show');
+  document.getElementById('hint-btn').disabled=false;
+  const pool=answerPool;
+  const wrong=shuf(pool.filter(h=>h.n!==cur.n)).slice(0,nChoices-1);
+  const opts=shuf([cur,...wrong]);
+  const div=document.getElementById('options');
+  div.innerHTML='';
+  div.style.gridTemplateColumns=(nChoices>4&&window.innerWidth>520)?'1fr 1fr 1fr 1fr':'1fr 1fr';
+  opts.forEach(h=>{const b=document.createElement('button');b.className='opt-btn';b.textContent=h.n;b.onclick=()=>pick(h.n,b);div.appendChild(b)});
+  updateStreak();
+}
+
+function loadHeroImage(key){
+  const img=document.getElementById('hero-img');
+  img.onerror=null;img.onload=null;
+  img.classList.remove('blurred');
+  img.classList.remove('grey');
+  img.classList.remove('revealing');
+  img.classList.add('loading');
+  if(blurMode) img.classList.add('blurred');
+  if(greyMode) img.classList.add('grey');
+  const tryLoad=(src)=>{
+    img.onerror=()=>{if(src===imgUrl(key))tryLoad(imgFb(key));else img.classList.remove('loading')};
+    img.onload=()=>img.classList.remove('loading');
+    img.src=src;
+  };
+  tryLoad(imgUrl(key));
+}
+
+function pick(name,btn){
+  if(answered)return;answered=true;
+  totalAttempts++;
+  if(totalAttempts===1){startBlur=blurMode;startGrey=greyMode;filterChanged=false;}
+  else if(blurMode!==startBlur||greyMode!==startGrey) filterChanged=true;
+  const ok=name===cur.n;
+  const pts=ok?(hintUsed?1:2):0;
+  score+=pts;
+  if(ok){
+    streak++;correct++;best=Math.max(best,streak);
+    btn.classList.add('correct');
+    if(isGM()&&!retryMode)trail.push({n:cur.n,ok:true});
+    if(retryMode){updateRetryProgress();}
+  } else {
+    streak=0;
+    btn.classList.add('wrong');
+    document.querySelectorAll('.opt-btn').forEach(b=>{if(b.textContent===cur.n)b.classList.add('reveal')});
+    if(isGM()&&!retryMode){trail.push({n:cur.n,ok:false});lives--;renderLives()}
+    if(retryMode) pendingRetry.add(cur.n); else missedHeroes.add(cur.n);
+  }
+  document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+  document.getElementById('hero-img').classList.add('revealing');
+  document.getElementById('hero-img').classList.remove('blurred');
+  document.getElementById('hero-img').classList.remove('grey');
+  const flash=document.getElementById('result-flash');
+  const icon=document.getElementById('flash-icon');
+  flash.className='show '+(ok?'correct-flash':'wrong-flash');
+  icon.textContent=ok?'✓':'✗';
+  if(!ok){
+    document.getElementById('reveal-name').textContent=cur.n;
+    document.getElementById('hero-name-reveal').classList.add('show');
+  }
+  updateHUD();updateStreak();
+  const delay=ok?900:1600;
+  if(isGM()&&!retryMode&&lives<=0){
+    setTimeout(()=>{flash.className='';document.getElementById('hero-name-reveal').classList.remove('show');showDead();},delay);
+    return;
+  }
+  setTimeout(()=>{
+    flash.className='';
+    document.getElementById('hero-name-reveal').classList.remove('show');
+    if(retryMode){
+      round++;
+      if(round>=queue.length){
+        if(pendingRetry.size===0){
+          // All done — cleared everything!
+          missedHeroes.clear();
+          wasRetry=true;
+          retryMode=false;
+          endGame();
+          return;
+        }
+        // Start a new pass with only the ones failed this pass
+        queue=shuf(HEROES.filter(h=>pendingRetry.has(h.n)));
+        pendingRetry=new Set();
+        round=0;
+      }
+      updateRetryProgress();
+      loadRound();
+      return;
+    }
+    round++;
+    const total=isGM()?HEROES.length:queue.length;
+    if(round>=total){endGame();return}
+    loadRound();
+  },delay);
+}
+
+function showDead(){
+  dead=true;
+  document.getElementById('go-count').textContent=correct;
+  document.getElementById('gover').style.display='flex';
+  setTimeout(endGame,1900);
+}
+
+function useHint(){
+  if(answered||hintUsed)return;hintUsed=true;
+  document.getElementById('hint-btn').disabled=true;
+  const cls={str:'b-str',agi:'b-agi',int:'b-int',uni:'b-uni'}[cur.a];
+  const lbl={str:'Strength',agi:'Agility',int:'Intelligence',uni:'Universal'}[cur.a];
+  document.getElementById('hint-overlay').innerHTML=`<span class="badge ${cls}">${lbl}</span>`+cur.r.map(x=>`<span class="badge b-role">${x}</span>`).join('');
+}
+
+function endGame(){
+  document.getElementById('game-card').style.display='none';
+  const es=document.getElementById('end-screen');es.style.display='block';
+  const isG=isGM();
+  const total=isG?HEROES.length:queue.length;
+  const modeName=MODE_NAMES[gMode]||gMode;
+  let title,subtitle;
+  if(retryMode||wasRetry){title='RETRY COMPLETE';subtitle='All missed heroes cleared!'}
+  else if(gMode==='hardcore'){title=dead?'☠ ELIMINATED':'☠ HARDCORE CLEARED ☠';subtitle=dead?'Hardcore — Failed':'Hardcore — All 127 Heroes Survived'}
+  else if(isG){title=dead?'GAUNTLET FAILED':'⚔ GAUNTLET CLEARED ⚔';subtitle=dead?MODE_NAMES[gMode]+' — Failed':MODE_NAMES[gMode]+' — Completed'}
+  else{title='GAME COMPLETE';subtitle=modeName+' Mode'}
+  document.getElementById('end-title').textContent=title;
+  document.getElementById('end-subtitle').textContent=subtitle;
+  const showAsGauntlet=isG&&!wasRetry;
+  document.getElementById('final-score').textContent=showAsGauntlet?correct:score;
+  const scoreDenom=wasRetry?totalAttempts:queue.length;
+  document.getElementById('final-denom').textContent=showAsGauntlet?`/ ${total} heroes`:`/ ${scoreDenom*2} pts`;
+  const sc=document.getElementById('sc-circle');sc.classList.toggle('ge',isG&&dead&&!wasRetry);
+  document.getElementById('s-correct').textContent=correct;
+  document.getElementById('s-acc').textContent=Math.round(correct/(totalAttempts||1)*100)+'%';
+  document.getElementById('s-streak').textContent=best;
+  const tr=document.getElementById('trail');
+  if(isG&&trail.length){tr.style.display='flex';tr.innerHTML=trail.map(t=>`<span class="chip ${t.ok?'ok':'bad'}">${t.n}</span>`).join('')}
+  else{tr.style.display='none';tr.innerHTML=''}
+  let rank,style;
+  if(isG&&!wasRetry){
+    if(!dead){rank='★ UNDYING LEGEND ★';style='background:rgba(232,184,75,.15);color:#e8b84b;border:1px solid rgba(232,184,75,.4)'}
+    else{const p=correct/total;
+      if(p>=.8){rank='DIVINE HERALD';style='background:rgba(232,184,75,.12);color:#e8b84b;border:1px solid rgba(232,184,75,.3)'}
+      else if(p>=.6){rank='IMMORTAL';style='background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.3)'}
+      else if(p>=.4){rank='LEGEND';style='background:rgba(129,140,248,.1);color:#818cf8;border:1px solid rgba(129,140,248,.3)'}
+      else if(p>=.2){rank='ARCHON';style='background:rgba(192,132,252,.1);color:#c084fc;border:1px solid rgba(192,132,252,.3)'}
+      else{rank='HERALD';style='background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.25)'}
+    }
+  }else{
+    const p=score/(scoreDenom*2||1);
+    if(p>=.93){rank='★ DIVINE HERALD ★';style='background:rgba(232,184,75,.15);color:#e8b84b;border:1px solid rgba(232,184,75,.4)'}
+    else if(p>=.77){rank='IMMORTAL';style='background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.3)'}
+    else if(p>=.60){rank='LEGEND';style='background:rgba(129,140,248,.1);color:#818cf8;border:1px solid rgba(129,140,248,.3)'}
+    else if(p>=.43){rank='ARCHON';style='background:rgba(192,132,252,.1);color:#c084fc;border:1px solid rgba(192,132,252,.3)'}
+    else if(p>=.27){rank='CRUSADER';style='background:rgba(96,165,250,.1);color:#60a5fa;border:1px solid rgba(96,165,250,.3)'}
+    else{rank='HERALD';style='background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.25)'}
+  }
+  const rb=document.getElementById('rank-badge');rb.textContent=rank;rb.style.cssText=style;
+  // Filter info
+  const fi=document.getElementById('filter-info');
+  const fw=document.getElementById('filter-warn-box');
+  const filterParts=[];
+  if(startBlur) filterParts.push('Blur');
+  if(startGrey) filterParts.push('Grey');
+  fi.textContent=filterParts.length?'Filters: '+filterParts.join(' + '):'No filters';
+  fi.className='';
+  if(filterChanged){fw.textContent='⚠ Filters changed mid-game';fw.style.display='block';}
+  else{fw.style.display='none';}
+  // Show retry button if there are missed heroes
+  const retryBtn=document.getElementById('retry-btn');
+  if(missedHeroes.size>0){
+    retryBtn.style.display='inline-block';
+    retryBtn.textContent=`🔁 RETRY ${missedHeroes.size} MISSED HERO${missedHeroes.size===1?'':'ES'}`;
+  } else {
+    retryBtn.style.display='none';
+  }
+}
+
+function updateHUD(){
+  document.getElementById('score-val').textContent=score;
+  const total=retryMode?queue.length:isGM()?HEROES.length:queue.length;
+  document.getElementById('round-val').textContent=(Math.min(round+1,total))+'/'+total;
+}
+function updateStreak(){document.getElementById('streak-txt').textContent=streak>=3?`🔥 KILLSTREAK ×${streak}`:''}
+function renderLives(){
+  const row=document.getElementById('lives-row');
+  if(!isGM()||retryMode){row.innerHTML='';return}
+  const maxLives=(gMode==='hardcore'||gMode==='ludacris')?1:3;
+  row.innerHTML='';
+  for(let i=0;i<maxLives;i++){const s=document.createElement('span');s.className='life-heart'+(i<(maxLives-lives)?' lost':'');s.textContent='❤️';row.appendChild(s)}
+}
+
+startGame();
+setTimeout(openModeModal, 50);
+</script>
+</body>
+</html>
